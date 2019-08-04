@@ -70,7 +70,7 @@ void vibrate(float freq_hz, float amp)
     //delay();
     
     alternate = alternate == true ? false : true;
-  }
+  //}
    
 }
 
