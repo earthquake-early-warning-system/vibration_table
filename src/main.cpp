@@ -40,37 +40,24 @@ void vibrate(float freq_hz, float amp)
   static elapsedMillis elapsedTime;
   static bool alternate=false;
   const float pos = 90.0f;
-  static float angle = pos;
   static float interval = 1000.0f/freq_hz;
   
-  //if(alternate 
-  // angle += alternate == true ? 0.1 : -0.1;
-
-  // if(angle >= pos+amp)
-  // {
-  //   alternate = false;
-  // }
-
-  // if (elapsedTime >= interval)
-  // {
-  //   elapsedTime = 0;
-    
-
-
+  if (elapsedTime >= interval)
+  {
+    elapsedTime = 0;
     if(alternate)
     {
-      //alternate = false;
       myservo.write(pos + amp);
     }
     else
     {
-      //alternate = true;
       myservo.write(pos - amp);
     }
+    alternate = (alternate == true) ? false : true;
     //delay();
     
-    alternate = alternate == true ? false : true;
-  //}
+    
+  }
    
 }
 
