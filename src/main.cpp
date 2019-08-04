@@ -57,129 +57,42 @@ void vibrate(float freq_hz, float amp)
   const float pos = 90.0f;
   static float interval;
   static float inc = 0.0;
-  const float res = 0.001;
-  const float inc_res = 0.01;
+  const float res = 0.0001;
+  const float inc_res = 0.1;
   float angle = 0.0f;
-  static float index = 0;
+  //static float index = 0;
 
-  interval = (2000.0f / freq_hz) * res;
+  interval = (1000.0f / freq_hz) * res;
 
   if (elapsedTime >= interval)
   {
     elapsedTime = 0;
-
-    if (alternate == true)
-    {
-      inc += inc_res; //index MAX_SIZE_SIN'
-      angle = pos + sin(pos + inc) * 10.0f;
-      if (angle > pos + amp)
-      {
-        alternate = false;
-      }
-    }
-
-    if (alternate == false)
-    {
-      inc -= inc_res; //index MAX_SIZE_SIN
-      angle = pos + sin(pos + inc) * 10.0f;
-      if (angle < pos - amp)
-      {
-        alternate = true;
-      }
-    }
+    inc += inc_res; //index MAX_SIZE_SIN'
+    inc = inc >= 360 ? 0 : inc;
+    angle = pos + sin(radians(inc)) * amp; 
     myservo.write(angle);
   }
-}
-void __vibrate(float freq_hz, float amp)
-{
-  static elapsedMillis elapsedTime = 0;
-  static bool alternate = true;
-  const float pos = 90.0f;
-  static float interval;
-  static float inc = 0.0;
-  const float res = 0.001;
-  const float inc_res = 0.01;
-  float angle = 0.0f;
-  static float index = 0;
-
-  interval = (2000.0f / freq_hz) * res;
-
-  if (elapsedTime >= interval)
-  {
-    elapsedTime = 0;
-
-    if (alternate == true)
-    {
-      inc += inc_res; //index MAX_SIZE_SIN'
-      angle = pos + sin(pos + inc) * 10.0f;
-      if (angle > pos + amp)
-      {
-        alternate = false;
-      }
-    }
-
-    if (alternate == false)
-    {
-      inc -= inc_res; //index MAX_SIZE_SIN
-      angle = pos + sin(pos + inc) * 10.0f;
-      if (angle < pos - amp)
-      {
-        alternate = true;
-      }
-    }
-    myservo.write(angle);
-  }
-}
-void _vibrate(float freq_hz, float amp)
-{
-  static elapsedMillis elapsedTime = 0;
-  static bool alternate = true;
-  const float pos = 90.0f;
-  static float interval;
-  static float inc = 0.0;
-  const float res = 1;
-  float angle = 0.0f;
-  static float index = 0;
-
-  interval = 1000.0f / freq_hz / MAX_SIZE_SIN;
-
-  if (elapsedTime >= interval * res)
-  {
-    elapsedTime = 0;
-
-    alternate = index > MAX_SIZE_SIN ? false : alternate;
-    alternate = index < 0 ? true : alternate;
-
-    if (alternate == true)
-    {
-      index += res; //index MAX_SIZE_SIN
-    }
-
-    if (alternate == false)
-    {
-      index -= res; //index MAX_SIZE_SIN
-    }
-
-    inc = inc_sin[(int)index] * 10.0f;
-
-    angle = pos + inc;
-
-    myservo.write(angle);
-  }
-}
+} 
 
 int const time_ms = 500;
 void loop()
 {
+  static elapsedMillis elapsedTime = 0;
+  static int inc = 1 ;
 
-  //vibrate(4, 50);
-
-  for (float inc = 0; inc < 360; inc += 1)
-  { // goes from 0 degrees to 180 degrees
-    // in steps of 1 degree
-    myservo.write(90 + sin(radians(inc))*10); // tell servo to go to position in variable 'pos'
-    delay(1);               // waits 15ms for the servo to reach the position
+  if(elapsedTime >= 5000)
+  {
+    elapsedTime = 0;
+    inc += 1;
   }
+  vibrate(inc, 20);
+
+  // for (float inc = 0; inc < 360; inc += 1)
+  // { // goes from 0 degrees to 180 degrees
+  //   // in steps of 1 degree
+  //   myservo.write(90 + sin(radians(inc))*10); // tell servo to go to position in variable 'pos'
+  //   delay(1);               // waits 15ms for the servo to reach the position
+  // }
 
   // for (float inc = 360; inc >= 0; inc -= 1)
   // { // goes from 0 degrees to 180 degrees
