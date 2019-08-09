@@ -10,7 +10,6 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 
-
 //const char* ssid = "********";
 //const char* password = "********";
 
@@ -67,7 +66,7 @@ void vibrate(float freq_hz, float amp)
   // Here 40ms reaction time for particular servo
   static elapsedMicros elapsedTime = 0;
 
-  float inc_res = 3.6 * freq_hz * time_res * 100.0 / 2.0;
+  float inc_res = 3.6 * freq_hz * time_res * 100.0;
   float interval = (1000000.0f) * time_res;
   float angle, pos = 0;
 
@@ -85,6 +84,7 @@ void vibrate(float freq_hz, float amp)
 }
 
 int const time_ms = 500;
+bool started = false;
 void loop()
 {
   static elapsedMillis elapsedTime = 0;
@@ -95,52 +95,69 @@ void loop()
   {
 
     int instr = Serial.read();
-    if (instr == '+')
+
+    if (instr == 'b')
     {
-      inc_l += 0.5;
-      Serial.printf_P("freq: %f\n", inc_l);
+      started = true;
+      Serial.printf_P("begun\n", inc_l);
     }
 
-    if (instr == '-')
+    if (instr == 'e')
     {
-      inc_l -= 0.5;
-      Serial.printf_P("freq: %f\n", inc_l);
+      started = false;
+      Serial.printf_P("ended\n", inc_l);
     }
 
-    if (inc_l <= 0)
+    if (started)
     {
-      inc_l = 1;
-      Serial.printf_P("freq clipped: %f\n", inc_l);
-    }
 
-    if (inc_l >= 50)
-    {
-      inc_l = 50;
-      Serial.printf_P("freq clipped: %f\n", inc_l);
-    }
+      if (instr == '+')
+      {
+        inc_l += 0.5;
+        Serial.printf_P("freq: %f\n", inc_l);
+      }
 
-    if (instr == 'a')
-    {
-      amp_l += 0.5;
-      Serial.printf_P("amp: %f\n", amp_l);
-    }
+      if (instr == '-')
+      {
+        inc_l -= 0.5;
+        Serial.printf_P("freq: %f\n", inc_l);
+      }
 
-    if (instr == 'z')
-    {
-      amp_l -= 0.5;
-      Serial.printf_P("amp: %f\n", amp_l);
-    }
+      if (inc_l <= 0)
+      {
+        inc_l = 1;
+        Serial.printf_P("freq clipped: %f\n", inc_l);
+      }
 
-    if (amp_l <= 0)
-    {
-      amp_l = 1;
-      Serial.printf_P("amp clipped: %f\n", amp_l);
-    }
+      if (inc_l >= 50)
+      {
+        inc_l = 50;
+        Serial.printf_P("freq clipped: %f\n", inc_l);
+      }
 
-    if (amp_l >= 50)
-    {
-      amp_l = 50;
-      Serial.printf_P("amp clipped: %f\n", amp_l);
+      if (instr == 'a')
+      {
+        amp_l += 0.5;
+        Serial.printf_P("amp: %f\n", amp_l);
+      }
+
+      if (instr == 'z')
+      {
+        amp_l -= 0.5;
+        Serial.printf_P("amp: %f\n", amp_l);
+      }
+
+      if (amp_l <= 0)
+      {
+        amp_l = 1;
+        Serial.printf_P("amp clipped: %f\n", amp_l);
+      }
+
+      if (amp_l >= 50)
+      {
+        amp_l = 50;
+        Serial.printf_P("amp clipped: %f\n", amp_l);
+      }
     }
   }
 
@@ -149,5 +166,8 @@ void loop()
   //   elapsedTime = 0;
   //   inc += 1;
   // }
-  vibrate(inc_l, amp_l);
+  if (started)
+  {
+    vibrate(inc_l, amp_l);
+  }
 }
