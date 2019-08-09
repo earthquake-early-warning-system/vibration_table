@@ -7,102 +7,147 @@
 #include "Arduino.h"
 #include <elapsedMillis.h>
 
-void _setup()
-{
-  // initialize LED digital pin as an output.
-  pinMode(LED_BUILTIN, OUTPUT);
-}
+#include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
 
-void _loop()
-{
-  // turn the LED on (HIGH is the voltage level)
-  digitalWrite(LED_BUILTIN, HIGH);
-  // wait for a second
-  delay(1000);
-  // turn the LED off by making the voltage LOW
-  digitalWrite(LED_BUILTIN, LOW);
-  // wait for a second
-  delay(1000);
-}
+
+//const char* ssid = "********";
+//const char* password = "********";
 
 #include <Servo.h>
 
 Servo myservo; // create servo object to control a servo
-// twelve servo objects can be created on most boards
+               // twelve servo objects can be created on most boards
 
+// WiFiUDP Udp;
+// unsigned int localUdpPort = 4210;
+// char incomingPacket[256];
+// char replyPacket[] = "Hi there! Got the message :-)";
 void setup()
 {
   myservo.attach(D7); // attaches the servo on GIO2 to the servo object
+  Serial.begin(115200);
+  Serial.printf_P("Start\n");
+
+  // WiFi.begin(ssid, password);
+  // while (WiFi.status() != WL_CONNECTED)
+  // {
+  //   delay(500);
+  //   Serial.print(".");
+  // }
+  // Serial.println(" connected");
+
+  // Udp.begin(localUdpPort);
 }
 
-#define MAX_SIZE_SIN (11)
-float inc_sin[MAX_SIZE_SIN] =
-    {
-        1.5192246987792,
-        1.23116594048622,
-        0.973193125842964,
-        0.745384835867802,
-        0.547810463172671,
-        0.380530190825445,
-        0.24359497401758,
-        0.137046524542617,
-        0.060917298090424,
-        0.015230484360873,
-        0};
+// void checkUdpMsg()
+// {
+//   int packetSize = Udp.parsePacket();
+//   if (packetSize)
+//   {
+//     Serial.printf("Received %d bytes from %s, port %d\n", packetSize, Udp.remoteIP().toString().c_str(), Udp.remotePort());
+//     int len = Udp.read(incomingPacket, 255);
+//     if (len > 0)
+//     {
+//       incomingPacket[len] = '\0';
+//     }
+//     Serial.printf("UDP packet contents: %s\n", incomingPacket);
 
+//     // (...)
+//   }
+// }
+
+static float inc = 0;
 void vibrate(float freq_hz, float amp)
 {
-  static elapsedMillis elapsedTime = 0;
-  static bool alternate = true;
-  const float pos = 90.0f;
-  static float interval;
-  static float inc = 0.0;
-  const float res = 0.0001;
-  const float inc_res = 0.1;
-  float angle = 0.0f;
-  //static float index = 0;
+  /* Corrected:: Now time_res independent algo is working.
+        20 ms servo response limitation */
+  /* - if this changes entire equation needs to account for the change*/
+  float time_res = 0.02; // Any servo response time is suitable
+  // Here 40ms reaction time for particular servo
+  static elapsedMicros elapsedTime = 0;
 
-  interval = (1000.0f / freq_hz) * res;
+  float inc_res = 3.6 * freq_hz * time_res * 100.0 / 2.0;
+  float interval = (1000000.0f) * time_res;
+  float angle, pos = 0;
 
-  if (elapsedTime >= interval)
+  if (elapsedTime >= interval) // micros
   {
+
     elapsedTime = 0;
-    inc += inc_res; //index MAX_SIZE_SIN'
+
+    inc += inc_res;
     inc = inc >= 360 ? 0 : inc;
-    angle = pos + sin(radians(inc)) * amp; 
-    myservo.write(angle);
+    angle = pos + sin(PI / 180.0 * (inc)) * amp;
+    myservo.write(angle + 90);
+    //Serial.printf_P("angle: %f\n",angle);
   }
-} 
+}
 
 int const time_ms = 500;
 void loop()
 {
   static elapsedMillis elapsedTime = 0;
-  static int inc = 1 ;
+  static float inc_l = 1;
+  static float amp_l = 10;
 
-  if(elapsedTime >= 5000)
+  if (Serial.available() > 0)
   {
-    elapsedTime = 0;
-    inc += 1;
+
+    int instr = Serial.read();
+    if (instr == '+')
+    {
+      inc_l += 0.5;
+      Serial.printf_P("freq: %f\n", inc_l);
+    }
+
+    if (instr == '-')
+    {
+      inc_l -= 0.5;
+      Serial.printf_P("freq: %f\n", inc_l);
+    }
+
+    if (inc_l <= 0)
+    {
+      inc_l = 1;
+      Serial.printf_P("freq clipped: %f\n", inc_l);
+    }
+
+    if (inc_l >= 50)
+    {
+      inc_l = 50;
+      Serial.printf_P("freq clipped: %f\n", inc_l);
+    }
+
+    if (instr == 'a')
+    {
+      amp_l += 0.5;
+      Serial.printf_P("amp: %f\n", amp_l);
+    }
+
+    if (instr == 'z')
+    {
+      amp_l -= 0.5;
+      Serial.printf_P("amp: %f\n", amp_l);
+    }
+
+    if (amp_l <= 0)
+    {
+      amp_l = 1;
+      Serial.printf_P("amp clipped: %f\n", amp_l);
+    }
+
+    if (amp_l >= 50)
+    {
+      amp_l = 50;
+      Serial.printf_P("amp clipped: %f\n", amp_l);
+    }
   }
-  vibrate(inc, 20);
 
-  // for (float inc = 0; inc < 360; inc += 1)
-  // { // goes from 0 degrees to 180 degrees
-  //   // in steps of 1 degree
-  //   myservo.write(90 + sin(radians(inc))*10); // tell servo to go to position in variable 'pos'
-  //   delay(1);               // waits 15ms for the servo to reach the position
+  // if (elapsedTime >= 5000)
+  // {
+  //   elapsedTime = 0;
+  //   inc += 1;
   // }
-
-  // for (float inc = 360; inc >= 0; inc -= 1)
-  // { // goes from 0 degrees to 180 degrees
-  //   // in steps of 1 degree
-  //   myservo.write(90 + sin(radians(90 + inc))*10); // tell servo to go to position in variable 'pos'
-  //   delay(10);               // waits 15ms for the servo to reach the position
-  // }
-  //delay(1000);
-  // for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
-  //   myservo.write(pos);              // tell servo to go to position in variable 'pos'
-  //   delay(15);                       // waits 15ms for the servo to reach the position
-  // }
+  vibrate(inc_l, amp_l);
 }
